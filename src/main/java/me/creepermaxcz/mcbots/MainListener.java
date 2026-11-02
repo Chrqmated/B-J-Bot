@@ -4,6 +4,8 @@ import org.geysermc.mcprotocollib.network.Session;
 import org.geysermc.mcprotocollib.network.event.session.*;
 import org.geysermc.mcprotocollib.network.packet.Packet;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundPlayerChatPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundPlayerInfoRemovePacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundPlayerInfoUpdatePacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundSystemChatPacket;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
@@ -23,8 +25,17 @@ public class MainListener implements SessionListener {
         Component sender;
         boolean chatPrintedOut = false;
 
+        if (packet instanceof ClientboundPlayerInfoUpdatePacket infoUpdate) {
+            ChatCommands.onPlayerInfo(infoUpdate.getEntries());
+            return;
+        } else if (packet instanceof ClientboundPlayerInfoRemovePacket infoRemove) {
+            ChatCommands.onPlayerRemove(infoRemove.getProfileIds());
+            return;
+        }
+
         if (packet instanceof ClientboundPlayerChatPacket) {
             ClientboundPlayerChatPacket clientboundPlayerChatPacket = ((ClientboundPlayerChatPacket) packet);
+            ChatCommands.onPlayerChat(clientboundPlayerChatPacket.getSender(), clientboundPlayerChatPacket.getContent());
             message = clientboundPlayerChatPacket.getUnsignedContent();
             sender = clientboundPlayerChatPacket.getName();
 

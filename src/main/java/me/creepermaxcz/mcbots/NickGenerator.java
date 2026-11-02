@@ -93,6 +93,16 @@ public class NickGenerator {
     }
 
     /**
+     * Generate next nick, cut to a maximum length
+     * @param maxLength maximum nick length, e.g. 15 for Bedrock bots as Floodgate adds a prefix
+     * @return generated nick
+     */
+    public String nextNick(int maxLength) {
+        String nick = nextNick();
+        return nick.length() <= maxLength ? nick : nick.substring(0, maxLength);
+    }
+
+    /**
      * Set prefix for generated nicks
      * @param prefix the prefix
      */

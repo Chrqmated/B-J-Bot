@@ -130,7 +130,7 @@ public class Utils {
                     if (resource == null) {
                         throw new Exception("Failed to load lang resource.");
                     }
-                    lang = new JsonParser().parse(new InputStreamReader(resource)).getAsJsonObject();
+                    lang = JsonParser.parseReader(new InputStreamReader(resource)).getAsJsonObject();
                 } catch (Exception e) {
                     Log.crit(e);
                 }
@@ -152,7 +152,7 @@ public class Utils {
                     Component component = arg.asComponent();
                     if (component instanceof TranslatableComponent) {
                         placeholders.add(translate((TranslatableComponent) component));
-                    } else if (arg instanceof TextComponent) {
+                    } else if (component instanceof TextComponent) {
                         placeholders.add(getFullText((TextComponent) component, false));
                     }
                 }

@@ -1,36 +1,71 @@
 plugins {
     id 'java'
+    id 'com.gradleup.shadow' version '9.6.1'
 }
 
-group 'me.creepermaxcz.mc-bots'
-version '1.2.14'
+group = 'me.creepermaxcz.mc-bots'
+version = '2.0.0'
 
-sourceCompatibility = 1.17
-targetCompatibility = 1.17
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
 
 repositories {
     mavenCentral()
-    maven { url 'https://jitpack.io' }
-    maven { url 'https://repo.opencollab.dev/maven-snapshots/' }
-    maven { url 'https://repo.opencollab.dev/maven-releases/' }
+    maven { url = 'https://jitpack.io' }
+    maven { url = 'https://repo.opencollab.dev/maven-snapshots/' }
+    maven { url = 'https://repo.opencollab.dev/maven-releases/' }
 }
 
 dependencies {
-    implementation 'org.geysermc.mcprotocollib:protocol:1.21.4-SNAPSHOT'
-    implementation 'net.kyori:adventure-text-serializer-gson:4.16.0'
-    implementation 'commons-cli:commons-cli:1.5.0'
-    implementation 'com.diogonunes:JColor:5.2.0'
-    implementation 'dnsjava:dnsjava:3.4.3'
-    implementation 'org.slf4j:slf4j-nop:2.0.13'
-    implementation 'org.jline:jline:3.22.0'
+    // Java Edition protocol (MC 26.2)
+    implementation 'org.geysermc.mcprotocollib:protocol:26.2-SNAPSHOT'
+
+    // Bedrock Edition protocol (26.60) + NetherNet (WebRTC) transport, the same stack Geyser uses
+    implementation 'org.cloudburstmc.protocol:bedrock-connection:3.0.0.Beta15-SNAPSHOT'
+    implementation 'org.cloudburstmc.netty:netty-transport-nethernet:2.0.0.CR6-SNAPSHOT'
+    // libdatachannel (WebRTC) native binaries used by NetherNet
+    ['windows-x86_64', 'linux-glibc-x86_64', 'linux-glibc-aarch64', 'macos-arm64'].each { platform ->
+        runtimeOnly "dev.opencollab:libdatachannel-java:0.24.6.0-SNAPSHOT:${platform}"
+    }
+
+    implementation 'net.kyori:adventure-text-serializer-gson:5.2.0'
+    implementation 'net.kyori:adventure-text-serializer-plain:5.2.0'
+    implementation 'commons-cli:commons-cli:1.9.0'
+    implementation 'com.diogonunes:JColor:5.5.1'
+    implementation 'dnsjava:dnsjava:3.6.3'
+    implementation 'org.slf4j:slf4j-nop:2.0.16'
+    implementation 'org.jline:jline:3.29.0'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << "-Xlint:deprecation"
 }
 
 jar {
     manifest {
         attributes 'Main-Class': 'me.creepermaxcz.mcbots.Main'
-        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     }
-    from {
-        configurations.runtimeClasspath.filter{ it.exists() }.collect { it.isDirectory() ? it : zipTree(it) }
+}
+
+// Runnable fat jar: build/libs/mc-bots-<version>.jar
+shadowJar {
+    archiveClassifier = ''
+    manifest {
+        attributes 'Main-Class': 'me.creepermaxcz.mcbots.Main', 'Multi-Release': 'true'
     }
+    // Several libraries register services (netty, dnsjava...), they must be merged, not overwritten
+    mergeServiceFiles()
+    exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA', 'META-INF/*.EC', 'module-info.class'
+}
+
+tasks.named('jar') {
+    archiveClassifier = 'thin'
+}
+
+tasks.named('build') {
+    dependsOn tasks.named('shadowJar')
 }
